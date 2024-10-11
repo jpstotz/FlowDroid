@@ -2564,8 +2564,10 @@ public class ARSCFileParser extends AbstractResourceParser {
 		offset += 1;
 
 		typeTable.flags = readUInt8(data, offset);
-		if (typeTable.flags != 0 && typeTable.flags != 1) {
-			raiseFormatViolationIssue("File format violation in type table: flags is not zero or one", offset);
+		if ((typeTable.flags & ALL_TYPE_FLAGS) != typeTable.flags) {
+			raiseFormatViolationIssue(
+					String.format("File format violation in type table: unexpected flags value 0x%x", typeTable.flags),
+					offset);
 		}
 		offset += 1;
 
@@ -2700,7 +2702,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 		}
 		offset += 1;
 
-		//this was reserved before and is now used! 
+		// this was reserved before and is now used!
 		typeSpecTable.typesCount = readUInt16(data, offset);
 		offset += 2;
 
@@ -2800,8 +2802,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 	 * @throws IOException Thrown if an error occurs during read
 	 */
 	private void readChunkHeader(InputStream stream, ResChunk_Header nextChunkHeader) throws IOException {
-		byte[] header = new byte[8];
-		stream.read(header);
+		byte[] header = stream.readNBytes(8);
 		readChunkHeader(nextChunkHeader, header, 0);
 	}
 
@@ -2839,8 +2840,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 	}
 
 	private int readUInt32(InputStream stream) throws IOException {
-		byte[] uint32 = new byte[4];
-		stream.read(uint32);
+		byte[] uint32 = stream.readNBytes(4);
 		return readUInt32(uint32, 0);
 	}
 
@@ -2849,6 +2849,9 @@ public class ARSCFileParser extends AbstractResourceParser {
 		int b1 = uint32[1 + offset] & 0x000000FF;
 		int b2 = uint32[2 + offset] & 0x000000FF;
 		int b3 = uint32[3 + offset] & 0x000000FF;
+//		if ((b3 & 0x80) != 0) {
+//			logger.warn(String.format("Integer overflow detected: 0x%02x%02x%02x%02x", b3, b2, b1, b0));
+//		}
 		return (Math.abs(b3) << 24) + (Math.abs(b2) << 16) + (Math.abs(b1) << 8) + Math.abs(b0);
 	}
 
