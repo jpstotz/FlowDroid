@@ -277,6 +277,8 @@ public class ARSCFileParser extends AbstractResourceParser {
 	 */
 	public final static int FLAG_OFFSET16 = 0x02;
 
+	public final static int ALL_TYPE_FLAGS = FLAG_SPARSE | FLAG_OFFSET16;
+
 	private final Map<Integer, String> stringTable = new HashMap<>();
 	private final List<ResPackage> packages = new ArrayList<>();
 
@@ -2279,10 +2281,6 @@ public class ARSCFileParser extends AbstractResourceParser {
 						boolean isSparse = ((typeTable.flags & FLAG_SPARSE) == FLAG_SPARSE);
 						boolean isOffset16 = ((typeTable.flags & FLAG_OFFSET16) == FLAG_OFFSET16);
 
-						if (isOffset16) {
-							throw new RuntimeException("Unsupported resource type entry: FLAG_OFFSET16");
-						}
-
 						// Read the table entries
 						for (int i = 0; i < typeTable.entryCount; i++) {
 							int entryOffset;
@@ -2291,6 +2289,12 @@ public class ARSCFileParser extends AbstractResourceParser {
 								// read inner struct of ResTable_sparseTypeEntry
 								resourceIdx = readUInt16(remainingData, offset);
 								offset += 2;
+								// The offset from ResTable_type::entriesStart, divided by 4.
+								entryOffset = readUInt16(remainingData, offset);
+								entryOffset *= 4;
+								offset += 2;
+							} else if (isOffset16) {
+								resourceIdx = i;
 								// The offset from ResTable_type::entriesStart, divided by 4.
 								entryOffset = readUInt16(remainingData, offset);
 								entryOffset *= 4;
@@ -2332,7 +2336,7 @@ public class ARSCFileParser extends AbstractResourceParser {
 											cmpRes.value.put(mapName, existingResource);
 										}
 
-										// We silently ignore inconsistencies at thze moment
+										// We silently ignore inconsistencies at the moment
 										if (existingResource instanceof ArrayResource)
 											((ArrayResource) existingResource).add(value);
 									} else {
